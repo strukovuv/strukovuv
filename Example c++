@@ -1,0 +1,53 @@
+//---------------------------------------------------------------------------
+//TFormMain.cpp -главная оконная форма для работы с базой данныхобработки заявок
+//---------------------------------------------------------------------------
+#include <vcl.h>
+#pragma hdrstop
+#include "TFormMain.h" //-описание класса-FormMain, прототипы функций
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma resource "*.dfm"
+TFormMain *FormMain;
+//---------------------------------------------------------------------------
+
+//Инициализация класса TFormMain
+//Использовать когда можно регистровую память
+//
+__fastcall TFormMain::TFormMain(TComponent* Owner)
+	: TForm(Owner)
+{
+
+
+iExecQR=0; //кол-во выполненнных  Exec SQL
+SetPanelPswHeightDefault(); //Установка размеров панели- с запросом на ввод ьпароля, центрирование ее на форме FormMain
+RestoreFormPosition(); //Восстановление формы и положения формы на экране после последнего входа
+ReadAllFromIni();     //Загрузка значений переменных из файла кллюч=значение
+dtStartProgramm=Time();//Время старта программы
+ShowVersiaToStatusBar();// отображение версии программы в статус бар
+}
+//---------------------------------------------------------------------------
+void __fastcall TFormMain::message(String messageX, String captionX,
+	int iFlag) {
+  //Вывод сообщения. например
+  //Выполнение закончено!
+  //      ОК
+	Screen->Cursor = crDefault;
+	Application->ProcessMessages();
+	Application->MessageBox(messageX.w_str(), captionX.w_str(), iFlag);
+}
+
+
+// ----------------------------------------------------------------------------
+bool __fastcall TFormMain::message2(String messageX, String captionX,
+	int iFlag) {
+
+	//Вывод сообщения. например
+  //Продолжить выполнение?
+  //     Нет  Да
+	
+	Application->ProcessMessages();
+	return(Application->MessageBox(messageX.w_str(), captionX.w_str(),
+			iFlag) == IDYES);
+}
+
+// ----------------------------------------------------------------------------
