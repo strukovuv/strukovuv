@@ -1,0 +1,175 @@
+/*
+1 Выборки пользователей, у которых количество постов больше, чем у пользователя их пригласившего.
+*/
+  select u1.id
+  ,u1.name
+  , u2.id as 'Приглашенный'
+  ,u2.posts_qty-u1.posts_qty as 'Дельта'
+  ,u1.posts_qty as 'u1.posts_qty'
+  ,u2.posts_qty as 'u2.posts_qty' from users u1
+  left join users u2 ON  u1.id=u2.invited_by_user_id
+  where u1.posts_qty <= u2.posts_qty
+
+
+
+
+
+/*
+2 Выборки пользователей, имеющих максимальное количество постов в своей группе.
+*/
+   select g1.name as 'Имя группы'
+   , max(u1.posts_qty) as 'Пользователь с макс. кол-вом постов' 
+   from users u1
+   left join groups g1 ON  u1.group_id=g1.id
+   group by g1.id,g1.name
+
+
+
+/*
+3 Выборки групп, количество пользователей в которых превышает 10000.
+см. @Count_MAX=10000 - можно заменить на иное
+*/
+   DECLARE @Count_MAX int
+   SET @Count_MAX=10000 
+   select g1.name,count(*) as 'Кол-во пользователей в группе'   from users u1
+   left join groups g1 ON  u1.group_id=g1.id 
+   group by g1.id,g1.name 
+   having count(*)>@Count_MAX
+
+
+
+
+
+/*
+4 Выборки пользователей, у которых пригласивший их пользователь из другой группы.
+*/
+
+    select 
+	u1.group_id as 'Группа пргласившего',  
+	u1.name as 'Имя пригласившего',  
+	u1.posts_qty as 'Кол-во постов пригласившего',  
+	
+	u3.group_id as 'Группа приглашенного',  
+	u1.name as 'Имя приглашенного',  
+	u1.posts_qty as 'Кол-во постов приглашенного'  
+	
+	from users u1
+	inner join users u3 ON u1.id=u3.invited_by_user_id
+	where EXISTS(SELECT * from users u2 where u2.invited_by_user_id = u1.id and u1.group_id <> u2.group_id)
+
+
+
+
+
+
+/*
+5 Выборки групп с максимальным количеством постов у пользователей.
+*/
+
+	Declare  @t  table(  
+	id_group int,
+	name  varchar(50),
+	qty int);
+declare @qty_max int
+declare @id_gropu_max int
+
+ select  
+  g1.id
+  ,g1.name as 'Имя группы'
+  , sum(u1.posts_qty) as 'Общее кол-во постов' 
+   from users u1
+   left join groups g1 ON  u1.group_id=g1.id
+  group by g1.id,g1.name
+
+insert into @t 
+  select  
+  g1.id
+  ,g1.name as 'Имя группы'
+  , sum(u1.posts_qty) as 'Общее кол-во постов' 
+   from users u1
+   left join groups g1 ON  u1.group_id=g1.id
+  group by g1.id,g1.name
+
+select @qty_max= max(qty) from @t
+
+select @id_gropu_max = id_group  from @t where  qty=@qty_max
+
+
+
+select @id_gropu_max as 'Группа', @qty_max as 'Общее кол-во постов'
+
+select * from users u1
+where u1.group_id=@id_gropu_max
+   
+
+
+
+
+
+/*
+
+Задание 2
+Написать SQL-запросы (MySQL) для добавления трех полей, изменения имени одного поля и 
+добавления двух индексов в базу данных размером свыше 100 ГБ и более 8 миллионов строк.
+Существует 2 варианта
+1. Создается новая маденькая таблица, с доп. полями
+она будет состыковываться со исхождной посредство JOIN
+Вариант хороший, т.к. исходная табл.не трогается. 
+Но Медленный!
+
+
+2 Вариант
+создаетем новую таблицк со всеми нужныит полями и индексами
+Перевливаем данные из исходной табл в новую
+переименовываем новую в старую
+
+Таблица InnoDB
+large_table_bak- резервная копия
+large_table- исходная таблица
+*/
+
+CREATE TABLE large_table_new LIKE large_table;
+ALTER TABLE large_table_new MODIFY COLUMN id INT(11);
+
+INSERT INTO large_table_new SELECT * FROM large_table;
+ALTER TABLE large_table RENAME large_table_bak;
+ALTER TABLE large_table_new RENAME large_table;
+
+/*
+Когда копия не нужна
+DROP TABLE large_table_bak; 
+Если нужен откат назад
+DROP TABLE large_table;
+ALTER TABLE large_table_bak RENAME large_table;
+*/
+
+
+
+/*
+Задание 3
+Написать рассчет количества вторников между двумя датами на PHP.
+
+
+
+*/
+
+/*
+	*
+	* @param String $dayName eg 'Mon', 'Tue' etc
+	* @param DateTimeInterface $start
+	* @param DateTimeInterface $end
+	* @return int
+*/
+function countDayByDeltaDayWeek($dayName, \DateTimeInterface $start, \DateTimeInterface $end)
+{
+    $count = 0;
+    $interval = new \DateInterval('P1D');
+    $period = new \DatePeriod($start, $interval, $end);
+
+    foreach($period as $day){
+        if($day->format('D') === ucfirst(substr($dayName, 0, 3))){
+            $count ++;
+        }
+    }
+    return $count;
+}
